@@ -1,14 +1,12 @@
-from aiogram import Router
-from aiogram.types import Message
+from aiogram import Router, types
 from aiogram.filters import Command
-from typing import Set
+from keyboards.review import get_review_keyboard
 
 start_router = Router()
 
-unique_users: Set[int] = set()
-
 @start_router.message(Command("start"))
-async def start_handler(message: Message) -> None:
-   unique_users.add(message.from_user.id)
-   user_count = len(unique_users)
-   await message.answer(f"Привет, {message.from_user.first_name}!\nНаш бот обслуживает уже {user_count} пользователей.")
+async def start_handler(message: types.Message) -> None:
+   await message.answer(
+      "Добро пожаловать! Вы можете оставить отзыв, нажав на кнопку ниже.",
+      reply_markup=get_review_keyboard()
+   )
