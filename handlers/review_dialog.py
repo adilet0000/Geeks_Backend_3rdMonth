@@ -1,9 +1,10 @@
-from aiogram import Router, types
+from aiogram import Router, types, F
+from aiogram.filters import Command
 from aiogram.types import CallbackQuery
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from typing import Dict
-from keyboards.review import get_food_rating_keyboard, get_cleanliness_rating_keyboard
+from keyboards.review import get_food_rating_keyboard, get_cleanliness_rating_keyboard, get_extra_comments_keyboard
 
 class RestaurantReview(StatesGroup):
     waiting_for_name = State()
@@ -16,10 +17,11 @@ review_router = Router()
 
 user_reviews: Dict[int, Dict] = {}
 
-@review_router.callback_query()
+@review_router.callback_query(F.data == "review")
 async def start_review(call: CallbackQuery, state: FSMContext) -> None:
-    if call.data != "review":
-        return
+    """
+    Обрабатываем нажатие кнопки "Оставить отзыв".
+    """
     user_id = call.from_user.id
     if user_id in user_reviews:
         await call.message.answer("Вы уже оставили отзыв. Спасибо!")
@@ -43,9 +45,10 @@ async def process_contact(message: types.Message, state: FSMContext) -> None:
     
     await state.update_data(contact=contact)
     
-    rating_kb = get_food_rating_keyboard()
-    
-    await message.answer("Как вы оцениваете качество еды? (1 - плохо, 5 - отлично)", reply_markup=rating_kb)
+    await message.answer(
+        "Как вы оцениваете качество еды? (1 - плохо, 5 - отлично)",
+        reply_markup=get_food_rating_keyboard()
+    )
     await state.set_state(RestaurantReview.waiting_for_food_rating)
 
 @review_router.message(RestaurantReview.waiting_for_food_rating)
@@ -55,9 +58,10 @@ async def process_food_rating(message: types.Message, state: FSMContext) -> None
         return
     await state.update_data(food_rating=int(message.text))
     
-    rating_kb = get_cleanliness_rating_keyboard()
-    
-    await message.answer("Как вы оцениваете чистоту заведения? (1 - плохо, 5 - отлично)", reply_markup=rating_kb)
+    await message.answer(
+        "Как вы оцениваете чистоту заведения? (1 - плохо, 5 - отлично)",
+        reply_markup=get_cleanliness_rating_keyboard()
+    )
     await state.set_state(RestaurantReview.waiting_for_cleanliness_rating)
 
 @review_router.message(RestaurantReview.waiting_for_cleanliness_rating)
@@ -67,15 +71,17 @@ async def process_cleanliness_rating(message: types.Message, state: FSMContext) 
         return
     await state.update_data(cleanliness_rating=int(message.text))
     
-    await message.answer("Добавьте дополнительные комментарии или оставьте жалобу (Если хотите пропустить введите: '-').", reply_markup=types.ReplyKeyboardRemove())
+    await message.answer(
+        "Добавьте дополнительные комментарии или выберите 'Пропустить'.",
+        reply_markup=get_extra_comments_keyboard()
+    )
     await state.set_state(RestaurantReview.waiting_for_extra_comments)
 
 @review_router.message(RestaurantReview.waiting_for_extra_comments)
 async def process_extra_comments(message: types.Message, state: FSMContext) -> None:
     data = await state.get_data()
-    
-    extra_comment = message.text.lower() if message.text.lower() != "пропустить" else "Нет комментариев"
-    
+
+    extra_comment = message.text if message.text.lower() != "пропустить" else "Нет комментариев"
     user_reviews[message.from_user.id] = {
         "name": data["name"],
         "contact": data["contact"],
@@ -87,8 +93,12 @@ async def process_extra_comments(message: types.Message, state: FSMContext) -> N
     await message.answer("Спасибо за ваш отзыв! Мы ценим ваше мнение.", reply_markup=types.ReplyKeyboardRemove())
     await state.clear()
 
-
-def get_review_keyboard() -> types.InlineKeyboardMarkup:
-    kb = types.InlineKeyboardMarkup()
-    kb.add(types.InlineKeyboardButton(text="Оставить отзыв", callback_data="review"))
-    return kb
+@review_router.message(Command("start"))
+async def send_welcome(message: types.Message) -> None:
+    """
+    Обрабатываем команду /start и отправляем сообщение с кнопкой "Оставить отзыв".
+    """
+    review_keyboard = types.InlineKeyboardMarkup()
+    review_keyboard.add(types.InlineKeyboardButton(text="Оставить отзыв", callback_data="review"))
+    
+    await message.answer("Добро пожаловать! Пожалуйста, оставьте отзыв о нашем ресторане.", reply_markup=review_keyboard)
