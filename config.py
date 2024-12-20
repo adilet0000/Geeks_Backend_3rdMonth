@@ -1,5 +1,7 @@
 import os
 from dotenv import load_dotenv
+from database import Database
+from aiogram import Dispatche
 
 load_dotenv()
 
@@ -12,3 +14,6 @@ RECIPES = [
    {"name": "Четыре сыра", "file": f"{IMAGES_DIR}/four_cheese.jpg", "description": "Идеально для любителей сыра."},
    {"name": "Пепперони", "file": f"{IMAGES_DIR}/pepperoni_pizza.png", "description": "Острая и сочная пицца."}
 ]
+
+dispatcher = Dispatcher()
+database = Database('db.sqlite3')

@@ -6,6 +6,7 @@ from aiogram.fsm.state import StatesGroup, State
 from typing import Dict
 import re
 from keyboards.review import get_review_keyboard, get_food_rating_inline_keyboard, get_cleanliness_rating_inline_keyboard, get_extra_comments_keyboard
+from config import database
 
 class RestaurantReview(StatesGroup):
     waiting_for_name = State()
@@ -94,6 +95,8 @@ async def process_extra_comments(message: types.Message, state: FSMContext) -> N
         "cleanliness_rating": data["cleanliness_rating"],
         "extra_comments": extra_comment,
     }
+    
+    database.save_poll(data)
 
-    await message.answer("Спасибо за ваш отзыв! Мы ценим ваше мнение.", reply_markup=types.ReplyKeyboardRemove())
+    await message.answer(f"Спасибо, {data[name]}, за ваш отзыв! Мы ценим ваше мнение.", reply_markup=types.ReplyKeyboardRemove())
     await state.clear()
