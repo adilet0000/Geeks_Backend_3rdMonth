@@ -5,7 +5,12 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from typing import Dict
 import re
-from keyboards.review import get_review_keyboard, get_food_rating_inline_keyboard, get_cleanliness_rating_inline_keyboard, get_extra_comments_keyboard
+from keyboards.review import (
+    get_review_keyboard,
+    get_food_rating_inline_keyboard,
+    get_cleanliness_rating_inline_keyboard,
+    get_extra_comments_keyboard,
+)
 from config import database
 
 class RestaurantReview(StatesGroup):
@@ -18,19 +23,12 @@ class RestaurantReview(StatesGroup):
 
 review_router = Router()
 
-user_reviews: Dict[int, Dict] = {}
-
 @review_router.message(Command("start"))
 async def send_welcome(message: types.Message):
     await message.answer("Добро пожаловать! Нажмите кнопку, чтобы оставить отзыв.", reply_markup=get_review_keyboard())
 
 @review_router.callback_query(F.data == "review")
 async def start_review(call: CallbackQuery, state: FSMContext) -> None:
-    user_id = call.from_user.id
-    if user_id in user_reviews:
-        await call.message.answer("Вы уже оставили отзыв. Спасибо!")
-        await state.clear()
-        return
     await call.message.answer("Как вас зовут?")
     await state.set_state(RestaurantReview.waiting_for_name)
 
@@ -85,9 +83,9 @@ async def process_cleanliness_rating(call: CallbackQuery, state: FSMContext) -> 
 @review_router.message(RestaurantReview.waiting_for_extra_comments)
 async def process_extra_comments(message: types.Message, state: FSMContext) -> None:
     data = await state.get_data()
-    extra_comment = message.text.lower() if message.text.lower() != "пропустить" else "Нет комментариев"
+    extra_comment = message.text if message.text.lower() != "пропустить" else "Нет комментариев"
 
-    user_reviews[message.from_user.id] = {
+    review = {
         "name": data["name"],
         "contact": data["contact"],
         "date": data["date"],
@@ -95,8 +93,9 @@ async def process_extra_comments(message: types.Message, state: FSMContext) -> N
         "cleanliness_rating": data["cleanliness_rating"],
         "extra_comments": extra_comment,
     }
-    
-    database.save_poll(data)
 
-    await message.answer(f"Спасибо, {data[name]}, за ваш отзыв! Мы ценим ваше мнение.", reply_markup=types.ReplyKeyboardRemove())
+    database.save_review(review)
+
+    await message.answer(f"Спасибо, {data['name']}, за ваш отзыв! Мы ценим ваше мнение.", reply_markup=types.ReplyKeyboardRemove())
     await state.clear()
+

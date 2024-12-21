@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 from database import Database
-from aiogram import Dispatche
+from aiogram import Dispatcher
 
 load_dotenv()
 
