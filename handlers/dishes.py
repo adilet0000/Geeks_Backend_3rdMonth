@@ -1,6 +1,8 @@
 from aiogram import Router, types
 from aiogram.filters import Command
+from aiogram.types import FSInputFile
 from config import database
+import os
 
 dishes_router = Router()
 
@@ -11,10 +13,15 @@ async def show_dishes(message: types.Message):
         await message.answer("Список блюд пуст.")
         return
 
-    response = "Список блюд:\n\n"
-    for name, category, price, description in dishes:
-        response += (
-            f"Название: {name}\nКатегория: {category}\n"
-            f"Цена: {price} руб.\nОписание: {description}\n\n"
+    for name, category, price, description, image_path in dishes:
+        text = (
+            f"<b>{name}</b>\n"
+            f"Категория: {category}\n"
+            f"Цена: {price:.2f} сом.\n"
+            f"Описание: {description}"
         )
-    await message.answer(response)
+        if os.path.exists(image_path):
+            photo = FSInputFile(image_path)
+            await message.answer_photo(photo=photo, caption=text, parse_mode="HTML")
+        else:
+            await message.answer(text, parse_mode="HTML")

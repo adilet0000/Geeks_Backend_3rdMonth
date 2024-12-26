@@ -23,7 +23,8 @@ class Database:
                     name TEXT NOT NULL,
                     category TEXT NOT NULL,
                     price REAL NOT NULL,
-                    description TEXT NOT NULL
+                    description TEXT NOT NULL,
+                    image_path TEXT
                 )
             ''')
             conn.commit()
@@ -50,14 +51,15 @@ class Database:
         with sqlite3.connect(self.path) as conn:
             conn.execute(
                 """
-                INSERT INTO dishes (name, category, price, description)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO dishes (name, category, price, description, image_path)
+                VALUES (?, ?, ?, ?, ?)
                 """,
                 (
                     dish['name'],
                     dish['category'],
                     dish['price'],
-                    dish['description']
+                    dish['description'],
+                    dish['image_path']
                 )
             )
             conn.commit()
@@ -65,6 +67,6 @@ class Database:
     def get_dishes(self, sort_by: str = "name"):
         with sqlite3.connect(self.path) as conn:
             cursor = conn.cursor()
-            query = f"SELECT name, category, price, description FROM dishes ORDER BY {sort_by} ASC"
+            query = f"SELECT name, category, price, description, image_path FROM dishes ORDER BY {sort_by} ASC"
             cursor.execute(query)
             return cursor.fetchall()

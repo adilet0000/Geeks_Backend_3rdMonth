@@ -1,14 +1,17 @@
+from aiogram import Bot
 from aiogram import Router, types, F
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from config import database
+import os
 
 class AddDish(StatesGroup):
     waiting_for_name = State()
     waiting_for_category = State()
     waiting_for_price = State()
     waiting_for_description = State()
+    waiting_for_image = State()
     confirm = State()
 
 admin_router = Router()
@@ -44,6 +47,20 @@ async def process_dish_price(message: types.Message, state: FSMContext):
 @admin_router.message(AddDish.waiting_for_description)
 async def process_dish_description(message: types.Message, state: FSMContext):
     await state.update_data(description=message.text)
+    await message.answer("Загрузите изображение блюда:")
+    await state.set_state(AddDish.waiting_for_image)
+
+@admin_router.message(AddDish.waiting_for_image, F.photo)
+async def process_dish_image(message: types.Message, state: FSMContext, bot: Bot):
+    photo = message.photo[-1]
+    image_path = f"images/{photo.file_unique_id}.jpg"
+    os.makedirs("images", exist_ok=True)
+
+    file = await bot.get_file(photo.file_id)
+    await bot.download_file(file_path=file.file_path, destination=image_path)
+
+    await state.update_data(image_path=image_path)
+
     data = await state.get_data()
     await message.answer(
         f"Подтвердите добавление блюда:\n\n"
