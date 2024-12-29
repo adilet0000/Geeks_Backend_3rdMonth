@@ -7,6 +7,7 @@ from handlers.random_recipe import random_recipe_router
 from handlers.review_dialog import review_router
 from handlers.admin_dishes import admin_router
 from handlers.dishes import dishes_router
+from handlers.group_moderator import group_router
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
@@ -17,6 +18,7 @@ dp.include_router(random_recipe_router)
 dp.include_router(review_router)
 dp.include_router(admin_router)
 dp.include_router(dishes_router)
+dp.include_router(group_router)
 
 async def main():
     database.create_tables()
