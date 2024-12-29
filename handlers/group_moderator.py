@@ -16,19 +16,6 @@ def contains_banned_words(text: str) -> bool:
    words = set(re.findall(r"\w+", text.lower()))
    return not words.isdisjoint(BANNED_WORDS)
 
-def parse_ban_duration(duration: str) -> timedelta:
-   units = {
-      "м": "minutes",
-      "ч": "hours",
-      "д": "days",
-      "н": "weeks",
-   }
-   match = re.match(r"(\d+)([мчдн])", duration)
-   if match:
-      value, unit = match.groups()
-      kwargs = {units[unit]: int(value)}
-      return timedelta(**kwargs)
-   raise ValueError("Некорректный формат времени")
 
 @group_router.message()
 async def check_banned_words(message: types.Message):
